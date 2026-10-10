@@ -56,6 +56,9 @@ Need different texts, emojis or default settings for your school? They're all in
 ## Screenshots
 
 <div align="center">
+<img src="images/timetable.png" width="650" alt="Hole view of the WebUntis page using the extension" /><br />
+
+<br /><br />
 
 <img src="images/lesson.png" width="420" alt="A lesson marked by Until in the WebUntis timetable" /><br />
 <p>The last lesson in the room gets marked in your timetable. While that lesson is running, the emoji lights up.</p>
