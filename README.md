@@ -87,11 +87,11 @@ Need different texts, emojis or default settings for your school? They're all in
 
 **Firefox**
 
-1. [Download this repository](../../archive/refs/heads/main.zip) and unzip it.
-2. Open `about:debugging#/runtime/this-firefox`.
-3. Click **Load Temporary Add-on…** and select `manifest.json`.
+You can simply download the Extension on the Firefox Add-ons site and follow the instructions:
 
-> Firefox removes temporary add-ons every time it restarts, so sadly you have to load it again.
+[addons.mozilla.org/addon/until-webuntis](https://addons.mozilla.org/addon/until-webuntis/)
+
+<br />
 
 ## Disclaimer
 
