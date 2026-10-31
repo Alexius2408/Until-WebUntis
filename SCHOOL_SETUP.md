@@ -7,6 +7,7 @@ Every school is a bit different. Maybe your students don't put chairs up, maybe 
 - [Before you start](#before-you-start)
 - [What you can change](#what-you-can-change)
   - [The emoji](#the-emoji)
+  - [The border](#the-border)
   - [Default settings](#default-settings)
   - [The alert and notification texts](#the-alert-and-notification-texts)
     - [Placeholders](#placeholders)
@@ -54,6 +55,19 @@ The color the emoji glows in when the lesson is about to end. Any CSS color work
 
 If you don't know what a specific color looks like, open the [Google Color Picker](https://www.google.com/search?q=hex+color+picker), pick a color you like, then click the copy button next to **HEX**. Paste the value between the quotes, for example `glowColor: "#ff6600",`.
 
+### The border
+
+The last lesson in a room gets a border in the WebUntis timetable.
+
+```js
+borderColor: "rgb(255, 109, 51)",
+borderThickness: "3px",
+```
+
+- **`borderColor`**: the color of the border. Any CSS color works, just like for `glowColor`.
+- **`borderThickness`**: how thick the border is. Any CSS size works, for example `"2px"` or `"2.5px"`.
+
+Students can switch the border on or off in the popup. Whether it starts on is set by `border` under [Default settings](#default-settings).
 
 ### Default settings
 
@@ -63,8 +77,8 @@ These are the settings a student starts with. Once a student changes a setting i
 switches: {
   notification: true, // system notification before the lesson ends
   alert: true,        // alert on the WebUntis page before the lesson ends
-  lesson: true,       // emoji on the lesson in the timetable
   taskbar: true,      // emoji in the WebUntis sidebar
+  border: true,       // border around the lessons in WebUntis
 },
 ```
 
@@ -78,7 +92,7 @@ minutes: {
 ```
 
 - **`remindMinutes`**: how many minutes before the end of the lesson the reminder comes. `0` means right when the lesson ends.
-- **`showMinutes`**: how many minutes before the end the emoji starts to glow. `0` means it never glows.
+- **`showMinutes`**: how many minutes before the end the emoji in the sidebar starts to glow. `0` means it never glows.
 - **`default`** is the starting value. **`min`** and **`max`** are the lowest and highest numbers a student can type into the popup.
 
 Example: your lessons are 45 minutes long, and the reminder should come 10 minutes before the end:
@@ -90,7 +104,7 @@ showMinutes: { default: 45, min: 0, max: 45 },
 <br/>
 
 
-> Be careful with lowering `max` to your lesson length. Students often have two lessons in a row (a double lesson, around 90 minutes), and some want the emoji to glow for the whole time. That's why the default `max` for `showMinutes` is `100`. If your school has double lessons, keep it at least that high.
+> Be careful with lowering `max` to your lesson length. Students often have two lessons in a row (a double lesson, around 90 minutes), and some want the sidebar emoji to glow for the whole time. That's why the default `max` for `showMinutes` is `100`. If your school has double lessons, keep it at least that high.
 
 
 ### The alert and notification texts
@@ -189,7 +203,7 @@ texts: {
 - **`fallbackLanguage`** is used when there is no block for the browser's language.
 - If a language block is missing one of the three texts, Until takes that text from the fallback language.
 
-The texts in the **popup** (like "Remind me with" or "On lessons") aren't in `variables.js` but in [`_locales/`](_locales/), one folder per language. For a full translation you need both. How to do that is in the [README](README.md#languages).
+The texts in the **popup** (like "Remind me" or "Show Borders") aren't in `variables.js` but in [`_locales/`](_locales/), one folder per language. For a full translation you need both. How to do that is in the [README](README.md#languages).
 
 If you translate Until into a new language, please send it to me so everyone can use it!
 

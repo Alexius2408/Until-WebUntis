@@ -11,3 +11,8 @@ web-ext-artifacts/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Other Folders and Files
+demo/
+sign/
+releases/

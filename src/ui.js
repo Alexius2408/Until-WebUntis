@@ -1,12 +1,9 @@
 // Visual behavior only, saving and loading lives in script.js.
 const emojiInput = document.getElementById("emoji-input");
 const emojiRow = document.getElementById("emoji-label");
-const emojiMirror = document.querySelector("[data-emoji-mirror]");
 const picker = document.getElementById("emoji-picker");
 const pickerGrid = picker.querySelector(".picker__grid");
-const pickerShortcut = picker.querySelector(".picker__shortcut");
 const FALLBACK_EMOJI = VARIABLES.defaultEmoji;
-const COLUMNS = 8;
 
 emojiInput.placeholder = FALLBACK_EMOJI;
 
@@ -22,7 +19,10 @@ document.querySelectorAll("[data-i18n]").forEach((element) => {
 });
 
 document.querySelectorAll("[data-i18n-label]").forEach((element) => {
-  element.setAttribute("aria-label", ext.i18n.getMessage(element.dataset.i18nLabel));
+  element.setAttribute(
+    "aria-label",
+    ext.i18n.getMessage(element.dataset.i18nLabel),
+  );
 });
 
 /* ---------- Small effects ---------- */
@@ -34,7 +34,6 @@ function pop(element) {
 }
 
 function showEmoji(emoji) {
-  emojiMirror.textContent = emoji || FALLBACK_EMOJI;
   pickerGrid.querySelectorAll(".picker__emoji").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.emoji === emoji));
   });
@@ -45,7 +44,9 @@ let buttons = [];
 
 async function drawEmoji() {
   // The emojis to choose from are in variables.js
-  const data = await ext.storage.local.get({ Emoji_array: VARIABLES.emojiChoices });
+  const data = await ext.storage.local.get({
+    Emoji_array: VARIABLES.emojiChoices,
+  });
   const emojis = data.Emoji_array;
 
   pickerGrid.innerHTML = "";
@@ -70,31 +71,17 @@ async function drawEmoji() {
 
 drawEmoji();
 
-// Each system has its own shortcut for the full emoji keyboard (Linux has none)
-const platform = (
-  navigator.userAgentData?.platform ||
-  navigator.platform ||
-  ""
-).toLowerCase();
-const shortcut = platform.includes("mac")
-  ? ["Ctrl", "⌘", "Space"]
-  : platform.includes("win")
-    ? ["Win", "."]
-    : [];
-shortcut.forEach((key) => {
-  const kbd = document.createElement("kbd");
-  kbd.textContent = key;
-  pickerShortcut.append(kbd);
-});
-
 function isOpen() {
   return picker.hasAttribute("data-open");
 }
 
 function openPicker(focusGrid = false) {
+  showEmoji(emojiInput.value);
+
   picker.setAttribute("data-open", "");
   picker.inert = false;
   emojiInput.setAttribute("aria-expanded", "true");
+
   if (focusGrid) {
     (
       buttons.find((b) => b.dataset.emoji === emojiInput.value) || buttons[0]
@@ -137,33 +124,6 @@ pickerGrid.addEventListener("click", (event) => {
   if (button) choose(button.dataset.emoji);
 });
 
-// Arrow keys move through the grid
-pickerGrid.addEventListener("keydown", (event) => {
-  const index = buttons.indexOf(document.activeElement);
-  if (index === -1) return;
-  const moves = {
-    ArrowRight: 1,
-    ArrowLeft: -1,
-    ArrowDown: COLUMNS,
-    ArrowUp: -COLUMNS,
-  };
-  if (event.key in moves) {
-    event.preventDefault();
-    const next = index + moves[event.key];
-    if (next < 0) return emojiInput.focus();
-    buttons[Math.min(next, buttons.length - 1)].focus();
-  } else if (event.key === "Home") {
-    event.preventDefault();
-    buttons[0].focus();
-  } else if (event.key === "End") {
-    event.preventDefault();
-    buttons[buttons.length - 1].focus();
-  } else if (event.key === "Escape") {
-    event.preventDefault();
-    closePicker(true);
-  }
-});
-
 // Close when clicking or tabbing somewhere else
 document.addEventListener("pointerdown", (event) => {
   if (
@@ -197,9 +157,10 @@ function updateNumberRows() {
   });
 }
 
-numberLists.forEach((list) => list.addEventListener("change", updateNumberRows));
+numberLists.forEach((list) =>
+  list.addEventListener("change", updateNumberRows),
+);
 
-// script.js restores the switches first (its storage reads were started earlier)
 ext.storage.local.get(null).then(updateNumberRows);
 
 /* ---------- Feedback ---------- */
@@ -207,12 +168,15 @@ ext.storage.local.get(null).then(updateNumberRows);
 // script.js filters the input first, so read the value after it
 emojiInput.addEventListener("input", () => {
   const emoji = emojiInput.value;
-  if (emoji && emoji !== emojiMirror.textContent) {
+  if (emoji) {
     pop(emojiInput);
-    pop(emojiMirror);
   }
   showEmoji(emoji);
 });
 
 // Show the saved emoji in the heading and picker when the popup opens
-ext.storage.local.get({ emoji: "" }).then((data) => showEmoji(data.emoji));
+ext.storage.local.get({ emoji: "" }).then((data) => {
+  if (emojiInput.value === data.emoji) {
+    showEmoji(emojiInput.value);
+  }
+});

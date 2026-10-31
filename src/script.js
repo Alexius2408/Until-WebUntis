@@ -1,11 +1,13 @@
-// Firefox calls the extension API "browser", Chrome and Edge call it "chrome"
 const ext = globalThis.browser ?? globalThis.chrome;
 
 const textinput = document.getElementById("emoji-input");
-const segmenter = new Intl.Segmenter();
+const numberInputs = document.querySelectorAll('input[type="number"]');
+const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+const emojiPattern = /\p{RGI_Emoji}/gv;
 
-function isEmoji(char) {
-  return /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20E3/u.test(char);
+// Takes a text and returns a list with only the emojis in it
+function getEmojis(text) {
+  return text.match(emojiPattern) ?? [];
 }
 
 // When the popup opens: restore the saved emoji
@@ -15,23 +17,19 @@ ext.storage.local.get({ emoji: "" }).then((data) => {
 
 // When it changes: filter it and save it
 textinput.addEventListener("input", () => {
-  const emojis = [...segmenter.segment(textinput.value)]
-    .map((s) => s.segment)
-    .filter(isEmoji);
-  const emoji = emojis.slice(-1).join("");
+  const emojis = getEmojis(textinput.value);
+  const emoji = emojis.length > 0 ? emojis[emojis.length - 1] : ""; // keep only the last one
 
   textinput.value = emoji;
   ext.storage.local.set({ emoji });
 });
 
-// Only when something is pasted (Ctrl+V / Cmd+V / right-click, Paste)
+// Only when something is pasted
 textinput.addEventListener("paste", async (event) => {
-  event.preventDefault(); // we insert it ourselves below
+  event.preventDefault();
 
   const pasted = event.clipboardData.getData("text"); // exactly what was pasted
-  const pastedEmojis = [...segmenter.segment(pasted)]
-    .map((s) => s.segment)
-    .filter(isEmoji);
+  const pastedEmojis = getEmojis(pasted);
 
   if (pastedEmojis.length === 0) return; // no emoji pasted, keep the old one
 
@@ -55,8 +53,6 @@ textinput.addEventListener("paste", async (event) => {
   textinput.dispatchEvent(new Event("input", { bubbles: true })); // save + animation
 });
 
-const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
 checkboxes.forEach((element) => {
   // Restore the saved state when the popup opens (the default is in variables.js)
   ext.storage.local.get({ [element.id]: VARIABLES.switches[element.id] ?? true }).then((data) => {
@@ -68,8 +64,6 @@ checkboxes.forEach((element) => {
     ext.storage.local.set({ [element.id]: element.checked });
   });
 });
-
-const numberInputs = document.querySelectorAll('input[type="number"]');
 
 numberInputs.forEach((element) => {
   // The default, lowest and highest number come from variables.js

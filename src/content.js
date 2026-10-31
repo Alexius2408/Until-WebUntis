@@ -1,13 +1,14 @@
 const TARGET_PATH = "/timetable/my-";
-const EMOJI_CLASS = "until_emoji_lesson_timetable";
+const LESSON_CLASS = "lesson-card";
 const ext = globalThis.browser ?? globalThis.chrome;
 
 // The defaults a school can change are in variables.js
 const DEFAULT_EMOJI = VARIABLES.defaultEmoji;
 const DEFAULT_SETTINGS = { ...VARIABLES.switches };
-const DEFAULT_TIMES = Object.fromEntries(
-  Object.entries(VARIABLES.minutes).map(([key, field]) => [key, field.default]),
-);
+const DEFAULT_TIMES = {
+  remindMinutes: VARIABLES.minutes.remindMinutes.default,
+  showMinutes: VARIABLES.minutes.showMinutes.default,
+};
 
 const settings = { ...DEFAULT_SETTINGS };
 const times = { ...DEFAULT_TIMES };
@@ -22,6 +23,21 @@ ext.storage.local.get(DEFAULT_TIMES).then((data) => {
 
 // Every school's WebUntis lives at <server>.webuntis.com/WebUntis/...
 const untis = ky.create({ baseUrl: "/WebUntis/" });
+
+// delete Old Data from previous Updates
+const currentVersion = ext.runtime.getManifest().version;
+
+async function clearOldVersionData() {
+  const { ExtensionVersion: savedVersion } = await ext.storage.local.get({ExtensionVersion: null});
+  if (savedVersion === currentVersion) return;
+
+  const allSavedEntrys = await ext.storage.local.get(null);
+  const keysToRemove  = Object.keys(allSavedEntrys).filter(
+    (k) => k === "lesson" || k.startsWith("chairs:"),
+  );
+  await ext.storage.local.remove(keysToRemove );
+  await ext.storage.local.set({ ExtensionVersion: currentVersion });
+}
 
 // Runs fn once and shares the result, forgets it on errors and after maxAge ms
 function cached(fn, maxAge = Infinity) {
@@ -39,6 +55,17 @@ function cached(fn, maxAge = Infinity) {
   };
 }
 
+// ---------- Time ----------
+// A time like 1250 (HHMM) as minutes since midnight, e.g. 770
+function toMinutes(hhmm) {
+  return Math.floor(hhmm / 100) * 60 + (hhmm % 100);
+}
+
+function getNowMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 // ---------- School name ----------
 // JSON RPC needs the school name, so try the places where it usually shows up
 const SCHOOL_KEY = `school:${location.host}`;
@@ -52,8 +79,8 @@ if (schoolInUrl) ext.storage.local.set({ [SCHOOL_KEY]: schoolInUrl });
 async function getLatestImportTime() {
   const saved = (await ext.storage.local.get(SCHOOL_KEY))[SCHOOL_KEY];
   const candidates = [
-    school, // worked on this page already
-    saved, // worked last time, or came from the login page
+    school,
+    saved,
     schoolInUrl,
     location.hostname.split(".")[0],
   ];
@@ -88,7 +115,6 @@ async function rpcWithSchool(schoolName, method, params = {}) {
 // The REST API needs a token. One is valid for 15 minutes, so reuse it for 14.
 const getToken = cached(
   async () => {
-    // ky's .text() would send "Accept: text/*" and WebUntis answers that with a 500
     const token = (
       await untis.get("api/token/new", { headers: { Accept: "*/*" } }).text()
     ).trim();
@@ -106,10 +132,9 @@ async function authHeader() {
 }
 
 function isLoggedIn() {
-  return getToken().then(
-    () => true,
-    () => false,
-  );
+  return getToken()
+    .then(() => true)
+    .catch(() => false);
 }
 
 const getUser = cached(async () => {
@@ -169,59 +194,43 @@ ext.storage.onChanged.addListener((changes, area) => {
   } else if (
     changes.notification ||
     changes.alert ||
-    changes.lesson ||
-    changes.taskbar
+    changes.taskbar ||
+    changes.border
   ) {
     for (const key in changes) {
       if (key in settings) settings[key] = changes[key].newValue;
     }
-    // Only take the emojis off the page, keep `marked` so turning it on again works
-    if (!settings["lesson"]) {
-      document
-        .querySelectorAll(`.${EMOJI_CLASS}`)
-        .forEach((span) => span.remove());
-    }
-  } else if (changes.remindMinutes || changes.showMinutes) {
+  }
+  if (changes.border) {
+    document
+      .querySelectorAll(`.${LESSON_CLASS}`)
+      .forEach((span) => (span.style.border = ""));
+  }
+  if (changes.remindMinutes || changes.showMinutes) {
     for (const key in changes) {
       if (key in times) times[key] = changes[key].newValue;
     }
   }
-  showEmojis(); // so turning "lesson" on or off takes effect right away
 });
 
 function setMarked(lessons) {
   marked = lessons;
-  document.querySelectorAll(`.${EMOJI_CLASS}`).forEach((span) => span.remove());
-  showEmojis();
+  showBorder();
 }
 
 // Safe to call any time: only adds what's missing
-function showEmojis() {
-  showEmojiSidebar();
-  if (!settings["lesson"]) return;
+function showBorder() {
+  if (!settings["border"]) return;
   for (const lesson of marked) {
-    const resource = document.querySelector(
-      `.lesson-card[data-testid$="-${lesson.id}"] [data-testid="regular-resource"]`,
+    const lesson_card = document.querySelector(
+      `.lesson-card[data-testid$="-${lesson.id}"]`,
     );
-    if (!resource) continue;
 
-    let span = resource.querySelector(`.${EMOJI_CLASS}`);
-    if (!span) {
-      span = document.createElement("span");
-      span.classList.add(EMOJI_CLASS);
+    if (!lesson_card) continue;
 
-      span.style.cssText =
-        "position:absolute; color:red; white-space:nowrap; right: 7px; top: 7px; font-size: 1.3rem;";
-      resource.appendChild(span);
-    }
-    if (span.textContent !== emoji) span.textContent = emoji;
-
-    // Checked every time, so the glow starts and stops while the page stays open
-    const glow = isEndingSoon(lesson);
-    if (span.dataset.glow !== String(glow)) {
-      span.dataset.glow = glow;
-      span.style.textShadow = glow ? `0 0 15px ${VARIABLES.glowColor}` : "";
-    }
+    lesson_card.style.border = `${
+      VARIABLES.borderThickness
+    } solid ${VARIABLES.borderColor}`;
   }
 }
 
@@ -230,14 +239,17 @@ function showEmojis() {
 let lastPage = null;
 let running = false;
 
-setInterval(() => {
-  showEmojis(); // WebUntis draws its cards late and sometimes again, so put the emoji back
-  checkPage();
-  showReminder();
-  showEmojiSidebar();
-}, 500);
+async function main() {
+  await clearOldVersionData();
+  setInterval(() => {
+    checkPage();
+    showBorder();
+    showReminder();
+    showEmojiSidebar();
+  }, 500);
+}
 
-// Logged out (e.g. on the login page): don't ask WebUntis every 500 ms, only every 30 s
+// Logged out: don't ask WebUntis every 500 ms, only every 30 s
 let loggedOutUntil = 0;
 
 async function showReminder() {
@@ -250,12 +262,9 @@ async function showReminder() {
   }
 
   const lessons = await getThisWeeksChairLessons();
-  const today = Number(
-    new Date().toLocaleDateString("sv-SE").replaceAll("-", ""),
-  );
   const now = new Date();
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const toMinutes = (t) => Math.floor(t / 100) * 60 + (t % 100);
+  const today = Number(now.toLocaleDateString("sv-SE").replaceAll("-", ""));
+  const nowMinutes = getNowMinutes();
 
   const todaysLesson = lessons.find(
     (l) => l.date === today && isReminderTime(toMinutes(l.end), nowMinutes),
@@ -309,15 +318,11 @@ function getText(name) {
   );
 }
 
-// Everything the texts in variables.js can use as {placeholder}
 function getPlaceholders(lesson) {
   const time = (t) =>
     t == null
       ? "?"
       : `${String(Math.floor(t / 100)).padStart(2, "0")}:${String(t % 100).padStart(2, "0")}`;
-
-  const now = new Date();
-  const endMinutes = Math.floor(lesson.end / 100) * 60 + (lesson.end % 100);
 
   return {
     emoji,
@@ -327,7 +332,7 @@ function getPlaceholders(lesson) {
     class: lesson.class ?? "?",
     start: time(lesson.start),
     end: time(lesson.end),
-    minutesLeft: endMinutes - (now.getHours() * 60 + now.getMinutes()),
+    minutesLeft: toMinutes(lesson.end) - getNowMinutes(),
   };
 }
 
@@ -349,10 +354,8 @@ function isEndingSoon(lesson) {
     String(now.getMonth() + 1).padStart(2, "0") +
     String(now.getDate()).padStart(2, "0");
 
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-  const end = Number(lesson["end"]);
-  const endMinutes = Math.floor(end / 100) * 60 + (end % 100);
+  const nowMinutes = getNowMinutes();
+  const endMinutes = toMinutes(Number(lesson["end"]));
 
   return (
     nowDate == lesson["date"] &&
@@ -363,43 +366,48 @@ function isEndingSoon(lesson) {
 
 async function showEmojiSidebar() {
   const wrapper = document.querySelector(".untis-menu-header--main .wrapper");
-  if (settings["taskbar"]) {
-    if (wrapper) {
-      // This week's lessons, so the glow also works while browsing other weeks
-      let lessons = [];
-      try {
-        lessons = await getThisWeeksChairLessons();
-      } catch {}
-      const glow = lessons.some(isEndingSoon);
 
-      // Keep only one emoji, remove leftovers from older versions of the script
-      const [first, ...extra] = wrapper.querySelectorAll(
-        ".until_sidebar_emoji",
-      );
-      extra.forEach((span) => span.remove());
+  if (!settings["taskbar"]) {
+    wrapper
+      ?.querySelectorAll(".until_sidebar_emoji")
+      .forEach((span) => span.remove());
 
-      let sidebarEmoji = first;
-      if (!sidebarEmoji) {
-        sidebarEmoji = document.createElement("span");
-        sidebarEmoji.classList.add("until_sidebar_emoji");
-        wrapper.appendChild(sidebarEmoji);
-      }
+    return;
+  }
 
-      // Set the style every time, so an emoji created by an older version gets it too
-      wrapper.style.position = "relative";
-      sidebarEmoji.style.cssText =
-        "position:absolute; right:10px; top:15px; transform:none; line-height:1; font-size:1.5rem; font-weight:bold; z-index:9999;";
-      sidebarEmoji.style.textShadow = glow
-        ? `0 0 10px ${VARIABLES.glowColor}`
-        : "";
-      if (sidebarEmoji.textContent !== emoji) sidebarEmoji.textContent = emoji;
-    }
-  } else {
-    if (wrapper) {
-      wrapper
-        .querySelectorAll(".until_sidebar_emoji")
-        .forEach((span) => span.remove());
-    }
+  if (!wrapper) return;
+
+  // This week's lessons, so the glow also works while browsing other weeks
+  let lessons = [];
+
+  try {
+    lessons = await getThisWeeksChairLessons();
+  } catch {}
+
+  const glow = lessons.some(isEndingSoon);
+
+  // Keep only one emoji
+  const [first, ...extra] = wrapper.querySelectorAll(".until_sidebar_emoji");
+
+  extra.forEach((span) => span.remove());
+
+  let sidebarEmoji = first;
+
+  if (!sidebarEmoji) {
+    sidebarEmoji = document.createElement("span");
+    sidebarEmoji.classList.add("until_sidebar_emoji");
+    wrapper.appendChild(sidebarEmoji);
+  }
+
+  wrapper.style.position = "relative";
+
+  sidebarEmoji.style.cssText =
+    "position:absolute; right:10px; top:15px; transform:none; line-height:1; font-size:1.5rem; font-weight:bold; z-index:9999;";
+
+  sidebarEmoji.style.textShadow = glow ? `0 0 10px ${VARIABLES.glowColor}` : "";
+
+  if (sidebarEmoji.textContent !== emoji) {
+    sidebarEmoji.textContent = emoji;
   }
 }
 
@@ -587,3 +595,5 @@ const getRoomIds = cached(async (week) => {
     body.rooms.map((r) => [r.room.shortName, r.room.id]),
   );
 });
+
+main();

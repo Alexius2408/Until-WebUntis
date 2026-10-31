@@ -8,12 +8,31 @@ const VARIABLES = {
 
   // The emojis you can pick from in the popup (8 per row)
   emojiChoices: [
-    "🪑", "🧹", "🧽", "🧼", "🗑️", "✨", "📚", "✏️",
-    "🔔", "⏰", "📌", "⚠️", "🚨", "✅", "❗",
+    "🪑",
+    "🧹",
+    "🧽",
+    "🧼",
+    "🗑️",
+    "✨",
+    "📚",
+    "✏️",
+    "🔔",
+    "⏰",
+    "📌",
+    "⚠️",
+    "🚨",
+    "✅",
+    "❗",
   ],
 
   // The glow color when the lesson is about to end, any CSS color works
   glowColor: "rgb(255, 0, 0)",
+
+  // The color of the border around the lesson in the timetable, any CSS color works
+  borderColor: "rgb(255, 109, 51)",
+
+  // How thick that border is, any CSS size works (e.g. "2.5px")
+  borderThickness: "3px",
 
   // ---------- Default settings ----------
   // The popup's starting values, a student's own changes are kept
@@ -22,8 +41,8 @@ const VARIABLES = {
   switches: {
     notification: true, // system notification before the lesson ends
     alert: true, // alert on the WebUntis page before the lesson ends
-    lesson: true, // emoji on the lesson in the timetable
     taskbar: true, // emoji in the WebUntis sidebar
+    border: true, // Border around the lesson
   },
 
   // The number fields in the popup: starting value, lowest and highest number
@@ -53,7 +72,6 @@ const VARIABLES = {
   fallbackLanguage: "en",
 
   texts: {
-
     // !!For translating copy the en section!!
     en: {
       // The pop-up on the WebUntis page
@@ -69,7 +87,8 @@ const VARIABLES = {
       ],
 
       // The system notification (keep it short, long text gets cut off)
-      notificationTitle: "{emoji} Chairs up - room {room} ends in {minutesLeft} min",
+      notificationTitle:
+        "{emoji} Chairs up - room {room} ends in {minutesLeft} min",
       notification: [
         "{subject} with {teacher} ends at {end}.",
         "Close the windows, clean the board, chairs on the tables.",
@@ -88,7 +107,8 @@ const VARIABLES = {
         "Endet in: {minutesLeft} Min.",
       ],
 
-      notificationTitle: "{emoji} Sessel hoch - Raum {room} endet in {minutesLeft} Min.",
+      notificationTitle:
+        "{emoji} Sessel hoch - Raum {room} endet in {minutesLeft} Min.",
       notification: [
         "{subject} bei {teacher} endet um {end}.",
         "Fenster zu, Tafel putzen, Sessel auf die Tische.",
