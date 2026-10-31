@@ -4,28 +4,27 @@
 
   "emojiSection": { "message": "Emoji" },
   "lessonEmoji": { "message": "Stunden Emoji" },
-  "lessonEmojiDesc": { "message": "Zum Wählen klicken oder einfügen" },
+  "lessonEmojiDesc": { "message": "Zum Wählen klicken" },
   "pickerLabel": { "message": "Emoji auswählen" },
   "pickerFoot": { "message": "Oder füge ein Emoji ein" },
 
-  "remindTitle": { "message": "Erinnere mich mit" },
+  "remindTitle": { "message": "Erinnerungen" },
   "notification": { "message": "Benachrichtigung" },
   "notificationDesc": { "message": "Systembenachrichtigung anzeigen" },
   "alert": { "message": "Meldung" },
   "alertDesc": { "message": "Meldung auf der WebUntis Seite" },
   "remindMinutes": { "message": "Minuten vor Stundenende erinnern" },
 
-  "showBefore": { "message": "" },
-  "showAfter": { "message": "in WebUntis anzeigen" },
-  "onLessons": { "message": "Bei Stunden" },
-  "onLessonsDesc": { "message": "Markiert die Stunde im Stundenplan" },
-  "sidebar": { "message": "In der Seitenleiste" },
+  "showBefore": { "message": "WebUntis Seite" },
+  "borderLessons": {"message": "Rahmen anzeigen"},
+  "borderLessonsDesc": {"message": "Markiert die Stunde mit einem Rahmen"},
+  "sidebar": { "message": "Seitenleiste" },
   "sidebarDesc": { "message": "Emoji in der Seitenleiste anzeigen" },
-  "highlightMinutes": { "message": "Emoji Minuten vor Stundenende hervorheben" },
+  "highlightMinutes": { "message": "Emoji leuchtet Minuten vor Stundenende" },
 
-  "footerBefore": { "message": "Besuch mein" },
-  "footerProfile": { "message": "GitHub Profile" },
-  "footerMiddle": { "message": "oder das" },
+  "footerBefore": { "message": "Mein" },
+  "footerProfile": { "message": "GitHub Profil" },
+  "footerMiddle": { "message": "und das" },
   "footerRepo": { "message": "Until Repo" },
   "footerAfter": { "message": "" }
 }
